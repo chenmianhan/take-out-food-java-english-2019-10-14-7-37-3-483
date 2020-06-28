@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -14,7 +15,82 @@ public class App {
 
     public String bestCharge(List<String> inputs) {
         //TODO: write code here
+        String receiptString="";
+        List<Order> orderList=new ArrayList<>();
+        double totalPrice=0;
+        double promotionPrice=0;
+        SalesPromotion salesPromotion=findSalePromotion(salesPromotionRepository.findAll(),"50%_DISCOUNT_ON_SPECIFIED_ITEMS");
+        List<String> promotionList=salesPromotion.getRelatedItems();
+        List<String> halfPriceItemList=new ArrayList<>();
 
+        for(String input:inputs){
+            String[]orderStrings=input.split(" ");
+            Order order=new Order(findItem(itemRepository.findAll(),orderStrings[0]),Integer.parseInt(orderStrings[2]));
+            orderList.add(order);
+            totalPrice+=order.getNum()*order.getItem().getPrice();
+            boolean isHalf=isPromotion(orderStrings[0],promotionList);
+            promotionPrice+=isHalf?
+                    (order.getNum()*order.getItem().getPrice())/2:order.getNum()*order.getItem().getPrice();
+            if(isHalf)halfPriceItemList.add(order.getItem().getName());
+        }
+//        System.out.println(totalPrice);
+//        System.out.println(promotionPrice);
+       if(totalPrice<30&&totalPrice==promotionPrice){
+           receiptString="============= Order details =============\n" ;
+           for(Order order:orderList){
+               receiptString+=order.getItem().getName()+" x "+order.getNum()+" = "
+                       +(int)(order.getNum()*order.getItem().getPrice())+" yuan\n";
+           }
+           receiptString += "-----------------------------------\n" ;
+           receiptString+="Total："+(int)totalPrice+" yuan\n" +
+                   "===================================";
+       }
+       else {
+           receiptString="============= Order details =============\n" ;
+           for(Order order:orderList){
+               receiptString+=order.getItem().getName()+" x "+order.getNum()+" = "
+                       +(int)(order.getNum()*order.getItem().getPrice())+" yuan\n";
+           }
+           receiptString += "-----------------------------------\n"+"Promotion used:\n" ;
+           if((totalPrice<30&&totalPrice<=promotionPrice)||
+                   (totalPrice>=30&&totalPrice-6>promotionPrice)){
+               receiptString+=
+                       salesPromotion.getDisplayName()+
+                               " (";
+               receiptString+=String.join("，",halfPriceItemList.toArray(new String[halfPriceItemList.size()]));
+               receiptString+=")，saving "+(int)(totalPrice-promotionPrice)+
+                       " yuan\n" +
+                       "-----------------------------------\n" +
+                       "Total："+(int)promotionPrice+" yuan\n" +
+                       "===================================";
+           }
+           else {
+               receiptString+=  "满30减6 yuan，saving 6 yuan\n" +
+                       "-----------------------------------\n" +
+                       "Total："+(int)(totalPrice-6)+" yuan\n" +
+                       "===================================";
+           }
+       }
+
+
+
+
+        return receiptString;
+    }
+    public Item findItem(List<Item>itemList,String id){
+        for(Item item:itemList){
+            if(item.getId().equals(id))return item;
+        }
         return null;
+    }
+    public SalesPromotion findSalePromotion(List<SalesPromotion> salesPromotions,String type){
+        for(SalesPromotion salesPromotion:salesPromotions){
+            if(salesPromotion.getType().equals(type))
+                return salesPromotion;
+        }
+        return null;
+    }
+    public boolean isPromotion(String id,List<String>promotionList){
+        return promotionList.contains(id);
     }
 }

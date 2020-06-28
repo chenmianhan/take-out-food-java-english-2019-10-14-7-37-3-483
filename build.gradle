@@ -16,7 +16,7 @@ plugins {
 
 // Define the main class for the application
 mainClassName = 'App'
-
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 dependencies {
 
     // Use JUnit test framework
